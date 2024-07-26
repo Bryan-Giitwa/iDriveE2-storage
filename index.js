@@ -3,15 +3,18 @@ const crypto = require("crypto");
 const axios = require("axios");
 const express = require("express");
 const multer = require("multer");
+const dotenv = require("dotenv");
+
+dotenv.config(); // Load environment variables from .env file
 
 const app = express();
 const upload = multer({ dest: "uploads/" });
 
 // iDrive E2 credentials and endpoint
-const accessKeyId = "ken2RDVGrwVHKhXQQVNh";
-const secretKey = "1lo3mhd9krWJEQGtWjF2NcGL4oZwK6YqnyGTeMxA";
-const endpoint = "https://x2v3.ldn.idrivee2-66.com";
-const bucket = "bryan-bucket";
+const accessKeyId = process.env.ACCESS_KEY_ID;
+const secretKey = process.env.SECRET_KEY;
+const endpoint = process.env.ENDPOINT;
+const bucket = process.env.BUCKET_NAME;
 
 app.post("/upload", upload.single("video"), async (req, res) => {
   const filePath = req.file.path;
@@ -50,14 +53,21 @@ app.post("/upload", upload.single("video"), async (req, res) => {
       res.send(`Upload successful: ${fileName}`);
       console.log(`Upload successful: ${fileName}`);
     } else {
-      res.send(`Upload failed with status code ${response.status}`);
+      res
+        .status(response.status)
+        .send(`Upload failed with status code ${response.status}`);
+      console.error(`Upload failed with status code ${response.status}`);
     }
   } catch (error) {
-    console.error(error);
-    res.send("Upload failed");
+    console.error("Error during file upload:", error);
+    res.status(500).send("Upload failed");
   } finally {
-    // Cleanup the uploaded file
-    fs.unlinkSync(filePath);
+    try {
+      // Cleanup the uploaded file
+      fs.unlinkSync(filePath);
+    } catch (err) {
+      console.error("Error cleaning up file:", err);
+    }
   }
 });
 
